@@ -1,0 +1,75 @@
+Function Descriptions
+
+Last Modified - Jan 16, 2017
+
+Note: Work in Progress!!!
+
+Intro: Below is a list of the module functions so far that I've developed.  
+Most of the functions are for setting the various parameters for the radio,
+2 for transmit and receive, 1 to get the last RSSI value and 1 to get the 
+temperature via the radios temperature sensor.
+
+transmit(transmitData, addressOn=False, address=0,packetLength=64) 
+– function to transmit data from the radio.  
+
+- transmitData: data to be transmitted, should be in string format
+- addressOn: if true an address byte will be added to the data to be sent
+- address:  the address byte to be sent if any address is being sent
+- packetLength:  length of packet radio is expecting to send, if fixed length
+mode is used this should match the payload length parameter the radio is using
+
+receive(timeout=999, background=False) – function to receive data sent to the radio
+
+- timeout: length of time the radio should stay in receive mode,  a value of -1 
+will leave the radio in receive mode indefinately.  To cancel the radio out of 
+receive mode early set the radio objects receive.Timeout variable to 0.
+- background – a value of False will leave the receive function inline with your
+ program, i.e. you program won't progress past the receive function until the 
+timeout length is reached. A value of True will put the receive function into 
+the background via a seperate thread so your program can proceed past the receive
+ function and do other stuff while the gathing receive data.
+
+All received data is put into the radio object's receiveData[] list.
+
+last_rssi() - this function returns the last received signal strength indicator
+stored in the radio's rssi register (RegRssiValue)  - this will be an integer 
+value in dBm
+
+temperature()  - this function will return the temperature obtained from the 
+radio's temperature sensor – this will be an integer value.  Note: the 
+temperature sensor will likely need to be calibrated against a know temperature.  
+The radio object has a temperatureOffset variable that will need to be set. 
+This can be done with the set_temperature_offset() function.
+
+Radio Set up Functions
+
+set_address_filtering(mode='none')
+set_afc(afcLowBetaOn='Standard', afcOffset=0, dccFreq=4, rxBW=10.4, autoclearOn='off', autoOn='on')
+set_auto_rx_restart(autoRestartOn='on', interPacketDelay=0x0)
+set_bitrate(bitrate)
+set_broadcast_address(address=0x07)
+set_checksum(crcOn='on', autoClearFifo='0n')
+set_data_mode(dataMode='packet', modulationType='FSK', modShaping='none', bitSynchOn='on')
+set_dc_free_encoding(encodingType='none')
+set_dio(dio0=0, dio1=0, dio2=0, dio3=0, dio4=0, dio5=0, clkOut='off')
+set_encryption(aesOn='on', aesKeyList=[])
+set_fifo_threshold(txStartCond='FifoLevel', threshold=20)
+set_frequency(frequency)
+set_frequency_deviation(fDev)
+set_lna(autoOn='on', gainSelect='G1', inputZ=50)
+set_mode_sequencer(sequencer='on')
+set_node_address(address=0x05)
+set_OCP(ocpOn='on', ocpMax=95)
+set_operating_mode(mode='standby')
+set_packet_format(packetFormat='fixed',payloadLength=64)
+set_power(ampSelect, powerLevel, powerRamp=40)
+set_preamble_length(length=2)
+set_register_by_address(registerAddr, value)
+set_register_by_name(registerName, value)
+set_rssi_threshold(rssi)
+set_rxbw(dccFreq=4, rxBW=10.4)
+set_sync(syncOn='on', syncSize=3, syncTol=2, fifoFill=0)
+set_sync_word(syncValueList=[0xE2,0x4A,0x26])
+set_temperature_offset(offset=0)
+set_timeout_rssi_threshold(timeoutOn='off', multiplier=0x00)
+set_timeout_rx_start(timeoutOn='off', multiplier=0x00)
