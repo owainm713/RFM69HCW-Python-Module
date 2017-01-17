@@ -3,7 +3,7 @@
 RFM69HCW packet radio module
 
 created Jan 15, 2017 OM
-last modified - Jan 16, 2017 OM"""
+last modified - Jan 17, 2017 OM"""
 
 """
 Copyright 2017 Owain Martin
@@ -41,7 +41,7 @@ IO.output(resetPin, False)
 # radio setup
 
 IO.output(enablePin, True)    
-radio=PR.Radio(0,1)
+radio=PR.Radio(0,1) # radio=PR.Radio(spi_port=0,spi_cs=1) 
 
 radio.set_temperature_offset(-3)
 print(radio.temperature())
