@@ -15,17 +15,20 @@ run the same and once I get a pair I will verify.
 
 Connections to the RFM69HCW breakout board from the Pi are as follows:
 
-Pi MISO to Radio MISO
-Pi MOSI to Radio MOSI
-Pi SCLK to Radio SCK
-Pi CE1 to Radio CS
-Pi GPIO ## to Radio EN
-Pi GPIO ## to Radio RST
-Pi 3.3V to Radio VIN
-Pi GND to Radio GND 
+- Pi MISO to Radio MISO
+- Pi MOSI to Radio MOSI
+- Pi SCLK to Radio SCK
+- Pi CE1 to Radio CS
+- Pi GPIO ## to Radio EN
+- Pi GPIO ## to Radio RST
+- Pi 3.3V to Radio VIN
+- Pi GND to Radio GND 
+- Radio DIO0 to DIO5 - not connected
 
 To operate the radio (via the adafruit breakout board), the Radio EN (enable) pin
-has to be high (3.3V) and the Radio RST (reset) pin has to be low (GND)
+has to be high (3.3V) and the Radio RST (reset) pin has to be low (GND). This module
+does not use or require the radio's hardware interrupts from DIO0 to DIO5 to operate.
+The module does provide for setting the DIO interrupts if you choose to use them.
 
 This python module is set up to use the radio's FSK modulation in packet mode.
 I have not tried out the OOK modulation option. The module default radio settings include
