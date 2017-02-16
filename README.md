@@ -2,8 +2,10 @@
 Python 2.x Module for use with the adafruit RFM69HCW breakout board
 and the Raspberry Pi
 
+To use this module, run your program as the root user,  i.e. sudo...
+
 The module uses and relies on py-spidev and python-dev to be installed 
-to use the SPI interface. 
+to use the SPI interface. SPI also needs to be enabled on each Raspberry Pi.
 
 The example code also uses RPi.GPIO to set the radio enable and reset 
 pins but any python module that can manipulate the Raspberry Pi's 
