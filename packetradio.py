@@ -2,7 +2,7 @@
 """packetradio, module for use with the RFM69HCW packet radio
 
 created Dec 19, 2016 OM
-work in progress - Jan 16, 2017"""
+work in progress - Mar 12, 2017"""
 
 """
 Copyright 2017 Owain Martin
@@ -506,7 +506,7 @@ class Radio:
 
         dioList = [dio0, dio1, dio2, dio3, dio4, dio5]
 
-        # check to ensure dio entered is a aild dio mapping value
+        # check to ensure dio entered is a valid dio mapping value
         # i.e. within 0 (0b00) to 3 (0b11)
 
         for i in range(0,6):

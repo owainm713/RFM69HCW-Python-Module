@@ -56,7 +56,7 @@ to set the parameters for automatic frequency correction.
 - dccFreq – valid values are 0.125, 0.25, 0.5, 1, 2, 4, 8, 16
 - rxBW – valid values are 2.6, 3.1, 3.9, 5.2, 6.3, 7.8, 10.4, 12.5, 15.6, 20.8, 25, 31.3, 41.7, 50.0, 62.5, 
   83.3, 100.0, 125.0, 166.7, 200.0, 250.0, 333.3, 400.0, 500.0. Together with dccFreq sets RegAfcBw (0x1A)
-- autoclearOn – valid value are 'on' and 'off'
+- autoclearOn – valid values are 'on' and 'off'
 - autoOn – valid values are 'on' and off.  Together with autoclearOn sets bits 2 & 3 of RegAfcFei (0x1E)
 
 set_auto_rx_restart(autoRestartOn='on', interPacketDelay=0x0) - function to enable/disable the automatic 
@@ -66,7 +66,7 @@ Rx restart (RSSI phase) feature of the radio and set the InterPacketRxDelay
 - sets bits 1 & 4-7 of RegPacketConfig2 (0x3D)
 
 set_bitrate(bitrate) – function to set the radio transmission bitrate
-bitrate – pass an integer value in bits per seconds
+- bitrate – pass an integer value in bits per seconds
 - sets registers RegBitrateMsb & RegBitrateLsb (0x03 & 0x04)
 
 set_broadcast_address(address=0x07)– function to set the broadcast address used in address filtering
@@ -81,11 +81,37 @@ set_checksum(crcOn='on', autoClearFifo='0n') – function to set the radio's che
   payload ready interrupt will not occur and the fifo will be cleared
 - sets bits 3 & 4 of RegPacketConfig1 (0x37)
 
-set_data_mode(dataMode='packet', modulationType='FSK', modShaping='none', bitSynchOn='on')
-set_dc_free_encoding(encodingType='none')
-set_dio(dio0=0, dio1=0, dio2=0, dio3=0, dio4=0, dio5=0, clkOut='off')
-set_encryption(aesOn='on', aesKeyList=[])
-set_fifo_threshold(txStartCond='FifoLevel', threshold=20)
+set_data_mode(dataMode='packet', modulationType='FSK', modShaping='none', bitSynchOn='on') – function to set
+ the data mode parameters
+- dataMode – valid choices are 'continuous' and 'packet'
+- modulationType – valid choices are 'FSK' or 'OOK'
+- modShaping – for modulationType of 'OOK',  valid values are 0, 1 , 2 with 0 meaing no shaping. For 
+  modulationType of 'FSK', valid values are 0, 1, 0.5, 0.3 with 0 again meaning no shaping.
+- bitSynchOn – valid values are 'on' or 'off'.  This only applies with dataMode of 'continuous' and 
+  will set the dataMode with or without the bit synchronizer on.
+- sets RegDataModul (0x02)
+
+set_dc_free_encoding(encodingType='none') – function to enable/disable DC free encoding,
+- encodingType – 3 choices 'none', 'manchester' or 'whitening'
+- sets bits 5 & 6 of RegPacketConfig1 (0x37)
+
+set_dio(dio0=0, dio1=0, dio2=0, dio3=0, dio4=0, dio5=0, clkOut='off') - function to map the DIO (digital I/O)
+pins of the radio as well as set the clock output frequency if used
+- dio0 – dio5 – pass an integer between 0 and 3 for each dio
+- clkOut –  valid values are 'off', 'auto', 1, 2, 4, 8, 16 and 32
+- sets RegDioMapping1 (0x25) and RegDioMapping2 (0x26)
+
+set_encryption(aesOn='on', aesKeyList=[]) - function to enable/disable AES encryption and set the 16 AES 
+encyption key registers. If aesKeyList is left empty the AES key registers will be left as is
+- aesOn – valid values are 'on' and 'off'
+- aesKeyList – pass a list of 16 integers (decimal or hex) with values between 1 and 255.
+- sets bit 0 of RegPacketConfig2 (0x3D) and RegAesKey1 – RegAesKey16 (0x3E - 0x4D)
+
+set_fifo_threshold(txStartCond='FifoLevel', threshold=20) - function to define the condition to start packet
+transmission and set the Fifo threshold used to trigger the FifoLevel interrupt
+- txStartCond – valid values are 'FifoLevel' and 'FifoNotEmpty'
+- threshold – pass an integer value between 0 and 66
+- sets RegFifoThresh (0x3C)
 
 set_frequency(frequency) – function to set the tranceiver's tx/rx frequency
 - frequency – pass an integer value in Hz
