@@ -1,6 +1,6 @@
 Function Descriptions
 
-Last Modified - Feb 15, 2017
+Last Modified - March 11, 2017
 
 Note: Work in Progress!!!
 
@@ -44,11 +44,26 @@ This can be done with the set_temperature_offset() function.
 Radio Set up Functions
 
 set_address_filtering(mode='none')– function to set the addressing filtering mode
-- mode: valid string values; none, node or both.  None means no address filtering is used, node requires address matching to the node address and both requires either node address or broadcast address matching
+- mode: valid string values; none, node or both.  None means no address filtering is used, node requires 
+  address matching to the node address and both requires either node address or broadcast address matching
 - sets bits 1&2 of RegPacketConfig1 (0x37)
 
-set_afc(afcLowBetaOn='Standard', afcOffset=0, dccFreq=4, rxBW=10.4, autoclearOn='off', autoOn='on')
-set_auto_rx_restart(autoRestartOn='on', interPacketDelay=0x0)
+set_afc(afcLowBetaOn='Standard', afcOffset=0, dccFreq=4, rxBW=10.4, autoclearOn='off', autoOn='on')– function
+to set the parameters for automatic frequency correction.
+- afcLowBetaOn -valid values are 'Standard' or 'Improved' and sets bit 5 of RegAfcCtrl (0x0B)
+- afcOffset – sets afc offset in low beta systems (i.e. afcLowBetaOn = Improved), pass an integer value in Hz. 
+  Sets RegTestAfc (0x71)
+- dccFreq – valid values are 0.125, 0.25, 0.5, 1, 2, 4, 8, 16
+- rxBW – valid values are 2.6, 3.1, 3.9, 5.2, 6.3, 7.8, 10.4, 12.5, 15.6, 20.8, 25, 31.3, 41.7, 50.0, 62.5, 
+  83.3, 100.0, 125.0, 166.7, 200.0, 250.0, 333.3, 400.0, 500.0. Together with dccFreq sets RegAfcBw (0x1A)
+- autoclearOn – valid value are 'on' and 'off'
+- autoOn – valid values are 'on' and off.  Together with autoclearOn sets bits 2 & 3 of RegAfcFei (0x1E)
+
+set_auto_rx_restart(autoRestartOn='on', interPacketDelay=0x0) - function to enable/disable the automatic 
+Rx restart (RSSI phase) feature of the radio and set the InterPacketRxDelay
+- autoRestartOn – valid values are 'on' and 'off'
+- interPacketDelay – pass an integer between 0 and 15
+- sets bits 1 & 4-7 of RegPacketConfig2 (0x3D)
 
 set_bitrate(bitrate) – function to set the radio transmission bitrate
 bitrate – pass an integer value in bits per seconds
@@ -59,7 +74,13 @@ set_broadcast_address(address=0x07)– function to set the broadcast address use
 - have had issues with even numbered address
 - sets register RegBroadcastAdrs (0x3A)
 
-set_checksum(crcOn='on', autoClearFifo='0n')
+set_checksum(crcOn='on', autoClearFifo='0n') – function to set the radio's checksum calculation function
+- crcOn – value is either 'on' or 'off', if 'on' a 2 byte checksum value is added to the transmitted data 
+  and the checksum calculation is performed on received data.
+- autoClearFifo – value is either 'on' or 'off',  if 'on' and crcOn is 'on', if the checksum fails the 
+  payload ready interrupt will not occur and the fifo will be cleared
+- sets bits 3 & 4 of RegPacketConfig1 (0x37)
+
 set_data_mode(dataMode='packet', modulationType='FSK', modShaping='none', bitSynchOn='on')
 set_dc_free_encoding(encodingType='none')
 set_dio(dio0=0, dio1=0, dio2=0, dio3=0, dio4=0, dio5=0, clkOut='off')
