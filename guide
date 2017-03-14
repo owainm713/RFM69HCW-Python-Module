@@ -22,7 +22,7 @@ receive(timeout=999, background=False) – function to receive data sent to the 
 
 - timeout: length of time the radio should stay in receive mode,  a value of -1 
 will leave the radio in receive mode indefinately.  To cancel the radio out of 
-receive mode early set the radio objects receive.Timeout variable to 0.
+receive mode early set the radio objects receiveTimeout variable to 0.
 - background – a value of False will leave the receive function inline with your
  program, i.e. you program won't progress past the receive function until the 
 timeout length is reached. A value of True will put the receive function into 
@@ -115,11 +115,24 @@ transmission and set the Fifo threshold used to trigger the FifoLevel interrupt
 
 set_frequency(frequency) – function to set the tranceiver's tx/rx frequency
 - frequency – pass an integer value in Hz
-- sets registers RegFrfMsb, RegFrfMid & Reg FrfLsb 0x07-0x09
+- sets registers RegFrfMsb, RegFrfMid & Reg FrfLsb (0x07-0x09)
 
-set_frequency_deviation(fDev)
-set_lna(autoOn='on', gainSelect='G1', inputZ=50)
-set_mode_sequencer(sequencer='on')
+set_frequency_deviation(fDev) - function to change the radio transmission frequency deviation
+- fDev – pass an integer value in Hz
+- sets registers RegFdevMsb & RegFdevLsb (0x05 & 0x06)
+
+set_lna(autoOn='on', gainSelect='G1', inputZ=50) - function to set the parameters for the receiver's
+LNA (low noise amplifier)
+- autoOn – valid values are 'on' and 'off''. Set to 'on' the LNA gain is set automatically by the 
+  radio's internal AGC loop, otherwise the gain is set manually by the user.
+- gainSelect – valid values are 'G1', 'G2', 'G3', 'G4', 'G5', 'G6'. This will manually set the LNA 
+  gain level if autoOn is set to 'off'
+- inputZ – valid values are 50 or 200 (ohms) and sets the LNA's input impedance
+- sets RegLna (0x18)
+
+set_mode_sequencer(sequencer='on') - function to enable/disable the radio's automatic sequencer
+- sequencer – valid values are 'on' and 'off'
+- sets bit 7 of RegOpMode (0x01)
 
 set_node_address(address=0x05)- function to set the node address used in address filtering
 - address – pass an integer between 1 and 255 in decimal or hex
