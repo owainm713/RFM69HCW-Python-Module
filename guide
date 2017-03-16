@@ -136,12 +136,25 @@ set_mode_sequencer(sequencer='on') - function to enable/disable the radio's auto
 
 set_node_address(address=0x05)- function to set the node address used in address filtering
 - address – pass an integer between 1 and 255 in decimal or hex
-- have had issues with even numbered address
+- have had issues with even numbered addresses
 - sets register RegNodeAdrs (0x39)
 
-set_OCP(ocpOn='on', ocpMax=95)
-set_operating_mode(mode='standby')
-set_packet_format(packetFormat='fixed',payloadLength=64)
+set_OCP(ocpOn='on', ocpMax=95) - function to enable/disable OCP (Over Current Protection) and set the 
+max current (mA)
+- ocpOn - valid values are 'on' and 'off'
+- ocpMax – pass an integer value between 45 and 120 (mA)
+- sets register RegOcp (0x13)
+
+set_operating_mode(mode='standby') - function to set the radio's current mode
+- mode – valid values are 'transmit', 'receive', 'sleep', 'freqSynth' and 'standby'
+- sets bits 2-4 of RegOpMode (0x01)
+
+set_packet_format(packetFormat='fixed',payloadLength=64) - function to set the packet format including 
+fixed vs variable vs unlimited length and payload length
+- packetFormat – valid values are 'variable', 'fixed' and 'unlimited'
+- payloadLength – pass an integer between 1 and 255
+- sets bit 7 of RegPacketConfig1 (0x37) and all of RegPayloadLength (0x38)
+
 set_power(ampSelect, powerLevel, powerRamp=40)
 set_preamble_length(length=2)
 set_register_by_address(registerAddr, value)
