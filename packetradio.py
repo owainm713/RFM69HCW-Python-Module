@@ -2,7 +2,7 @@
 """packetradio, module for use with the RFM69HCW packet radio
 
 created Dec 19, 2016 OM
-work in progress - Mar 12, 2017"""
+work in progress - Mar 17, 2017"""
 
 """
 Copyright 2017 Owain Martin
@@ -843,6 +843,9 @@ class Radio:
         """set_preamble_length, user function to set the length
         of the preamble (bytes)"""
 
+        if length < 1:
+            length = 1
+
         msb = (length & 0xFF00)>>8
         lsb = length & 0xFF
 
@@ -860,7 +863,7 @@ class Radio:
 
     def set_register_by_address(self, registerAddr, value):
         """set_register_by_address, user function to set a single
-        register by passing the register name amd value for it to be
+        register by passing the register address and the value for it to be
         set to. The radio object registerList is also updated"""
 
         for reg in self.registerList:
@@ -873,7 +876,7 @@ class Radio:
 
     def set_register_by_name(self, registerName, value):
         """set_register_by_name, user function to set a single
-        register by passing the register name amd value for it to
+        register by passing the register name and the value for it to
         be set to. The radio object registerList is also updated"""
 
         for reg in self.registerList:
