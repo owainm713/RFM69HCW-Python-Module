@@ -1,6 +1,6 @@
 Function Descriptions
 
-Last Modified - March 17, 2017
+Last Modified - March 18, 2017
 
 Note: Work in Progress!!!
 
@@ -162,12 +162,12 @@ power used and power ramp time
   are not yet developed but the set_register_by_address or set_register_by_name function could be used.
 - powerLevel – pass an integer value between -18 and 13 for Pa0, between -2 and 13 for Pa1, between
   2 and 17 for Pa2 and between 5 and 20 for Pa2H.
-- powerRamp – valid values are in (micro seconds); 10, 12, 15, 20, 25, 31, 40, 50, 62, 100, 125, 250,
+- powerRamp – valid values are (micro seconds); 10, 12, 15, 20, 25, 31, 40, 50, 62, 100, 125, 250,
   500, 1000, 2000 and 3400
 - sets RegPaLevel (0x11) and RegPaRamp (0x12)
 
 set_preamble_length(length=2) - function to set the length of the preamble (bytes)
-- length – pass and integer value between 1 and 65535
+- length – pass an integer value between 1 and 65535
 - sets RegPreambleMsb (0x2C) and RegPreamble (0x2D)
 
 set_register_by_address(registerAddr, value) - function to set a single register by passing the 
@@ -181,10 +181,45 @@ name and the value for it to be set to. The radio object registerList is also up
   are used (i.e. RegPreambleMsB)
 - value – pass the value you want to set the register to
 
-set_rssi_threshold(rssi)
-set_rxbw(dccFreq=4, rxBW=10.4)
-set_sync(syncOn='on', syncSize=3, syncTol=2, fifoFill=0)
-set_sync_word(syncValueList=[0xE2,0x4A,0x26])
-set_temperature_offset(offset=0)
-set_timeout_rssi_threshold(timeoutOn='off', multiplier=0x00)
-set_timeout_rx_start(timeoutOn='off', multiplier=0x00)
+set_rssi_threshold(rssi) - funstion to change the receive signal strength indicator (rssi) threshold
+(dBm) used by the receiver
+- rssi – pass an float value (dBm) between 0 and 127.5
+- sets RegRssiThresh (0x29)
+
+set_rxbw(dccFreq=4, rxBW=10.4) - function to set the receiver bandwidth parameters when afc 
+(automatic frequency correction) is not enabled
+- dccFreq – valid values are 0.125, 0.25, 0.5, 1, 2, 4, 8, 16
+- rxBW – valid values are 2.6, 3.1, 3.9, 5.2, 6.3, 7.8, 10.4, 12.5, 15.6, 20.8, 25, 31.3, 41.7,
+  50.0, 62.5, 83.3, 100.0, 125.0, 166.7, 200.0, 250.0, 333.3, 400.0, 500.0
+- sets RegRxBw (0x19)
+
+set_sync(syncOn='on', syncSize=3, syncTol=2, fifoFill=0) - function to set the sync word options
+- syncOn – valid values are 'on' and 'off'. Turns sync word generation and detection on or off
+- syncSize – pass an integer value (bytes) between 1 and 7. Sets the size of the sync word
+- syncTol -  pass an integer value (bits) between 1 and 7. Sets the number of tolerated bit errors
+  in the sync word
+- fifoFill – valid values are 0 and 1.
+- sets RegSyncConfig (0x2E)
+
+set_sync_word(syncValueList=[0xE2,0x4A,0x26]) - function to set the sync word. This will set the
+8 RegSyncValue registers
+- syncValueList – pass a list of 1 to 8 integers (decimal or hex). Each integer should be between
+  1 and 255
+- sets registers RegSyncValue1 to RegSyncValue8 (0x2F - 0x36)
+
+set_temperature_offset(offset=0) - function to change the temperature offset value, used to calibrate
+the radio temperature sensor reading.
+- offset – pass an integer value
+
+set_timeout_rssi_threshold(timeoutOn='off', multiplier=0x00) - function enable/disable the TimeoutRssiThresh
+interrupt and to set it's level if enabled
+- timeoutOn – valid values are 'on' and 'off'
+- multiplier – pass an integer value between 1 and 255
+- sets RegRxTimeout2 (0x2B)
+
+set_timeout_rx_start(timeoutOn='off', multiplier=0x00) - function enable/disable the TimeoutRxStart interrupt
+and to set it's level if enabled
+- timeoutOn – valid values are 'on' and 'off'
+- multiplier – pass an integer value between 1 and 255
+- sets RegRxTimeout1 (0x2A)
+
