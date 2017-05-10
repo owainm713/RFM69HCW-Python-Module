@@ -2,7 +2,7 @@
 """packetradio, module for use with the RFM69HCW packet radio
 
 created Dec 19, 2016 OM
-work in progress - Mar 17, 2017"""
+work in progress - May 8, 2017"""
 
 """
 Copyright 2017 Owain Martin
@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import time, spidev, sys, threading
+import RPi.GPIO as IO
 
 class Radio:
 
@@ -116,10 +117,16 @@ class Radio:
             print(hex(reg['address']),' ',hex(self.single_access_read(reg['address'])))"""
 
         self.temperatureOffset = 0
-        self.receiveData=[] # list to place received data
-        self.receiveTimeout = 0 # timeout value for the receiver
+        self.receiveData=[]         # list to place received data
+        self.receiveTimeout = 0     # timeout value for the receiver
+        self.intPin = 0             # interrupt pin used
+        self.sendAck = 0            # ack pattern for when returning an acknowledgment
+        self.receiveAck = 0         # ack pattern for when asking for an acknowledgment back
+        self.packetFormat = 'fixed' # packet format, fixed, variable or unlimited
 
         return
+
+    #----------------- module interal use functions ---------------------
 
     def single_access_write(self, reg=0x01, regValue=0x0):
         """single_access_write, function to write to a single data register
@@ -166,24 +173,42 @@ class Radio:
 
         return
 
-    def fifo_write(self, fifoData, addressOn=False, address=0,packetLength=64):
+    def fifo_write(self, fifoData, addressOn=False, address=0, fromAddress=0, ack=False, ackPattern=0, packetLength=64):
         """fifo_write, function to write data to the radio fifo register,
         this will be the data that gets transmitted by the radio
 
         fifoData  contains a string that will be converted to a bytearray for transmitting
         packetLength is the packet length to be transmitted"""
 
-        fifoData=bytearray(fifoData)
+        fifoData=bytearray(fifoData)        
 
-        if addressOn==True:
-            fifoData.insert(0,address) # address byte
+        if ack == True:
+            try:
+                ackPattern = int(ackPattern)
+                fifoData.insert(0,ackPattern)           # acknowledge Pattern
+            except:
+                for i in range(len(ackPattern)-1,-1,-1):  
+                    fifoData.insert(0,ackPattern[i])    # acknowledge Pattern
+
+        if fromAddress != 0:
+            fifoData.insert(0,fromAddress)              # from address byte
+
+        if addressOn==True:            
+            fifoData.insert(0,address)                  # address byte
+
+        if self.packetFormat == 'variable':
+            lengthByte = len(fifoData)
+            fifoData.insert(0,lengthByte)               # length byte
+            
+        
 
         # check fifoData length, if less than packetLength, add spaces for padding
         # until fifoData length is equal to packetLength
 
-        if len(fifoData)<packetLength:
-            for i in range(len(fifoData),packetLength):
-                fifoData.append(' ')
+        if self.packetFormat == 'fixed':
+            if len(fifoData)<packetLength:
+                for i in range(len(fifoData),packetLength):
+                    fifoData.append(' ')
 
         # check fifoData length, if greater than packetLength, remove excess data
         # until fifoData length is equal to packetLength
@@ -193,7 +218,7 @@ class Radio:
 
         # write data to fifo register    
 
-        self.variable_length_write(0x0,packetLength,fifoData)
+        self.variable_length_write(0x0,len(fifoData),fifoData)   #(0x0,packetLength,fifoData)
 
         return
 
@@ -209,7 +234,7 @@ class Radio:
         while (self.single_access_read(0x28) & 0b01000000)==64:            
             fifoData.append(self.single_access_read())        
 
-        return fifoData
+        return fifoData    
 
     def transmit_packet(self):
         """transmit_packet, function to transmit a single packet of data that
@@ -229,7 +254,7 @@ class Radio:
             count+=1
             if count == 100:                
                 break
-            time.sleep(0.025)
+            time.sleep(0.01)  # was 0.025
 
         # put radio back into standby mode
 
@@ -238,13 +263,143 @@ class Radio:
 
         return
 
-    def last_rssi(self):
-        """last_rssi, user function to get the last rssi value
-        mesaured by the radio receiver"""
+    def send_ack(self,addr):
+        """send_ack, function to send back an acknowledgement"""
 
-        lastRssi=-self.single_access_read(0x24)/2
+        # put radio into standby mode        
+        self.set_operating_mode('standby')
 
-        return lastRssi        
+        # get fromAddress (i.e. radio nodeAddress) from register list
+
+        for reg in self.registerList:     
+            if reg['name'] == 'RegNodeAdrs':            
+                fromAddr =reg['value']
+                break
+
+        # transmit ACK
+            
+        self.transmit('ACK ACK ACK ACK ACK',addressOn=True, toAddress=addr,fromAddress=fromAddr,
+                       ack=True, ackPattern=self.sendAck, packetLength=64)
+
+        # put radio back into receive mode
+        self.set_operating_mode('receive')
+        
+        return
+
+    def receive_ack(self,toAddress,intType = 'hw'):
+        """receive_ack, function to check for an acknowledgement
+        back, requires hw interrupt"""     
+
+        success = False
+
+        intPin = self.intPin
+
+        def check_ack(data):
+            """check_address, function to check the ack is from the correct
+            address and check the ack is the correct value"""
+
+            if self.packetFormat == 'fixed':
+                sendAckByte = data[2]
+                toAddressByte = data[1]
+            else:  # packetFormat = 'variable'
+                sendAckByte = data[3]
+                toAddressByte = data[2]
+
+            if sendAckByte == self.sendAck and toAddressByte == toAddress:    
+                return True
+            else:
+                return False
+
+            
+
+        # put radio into receive mode
+        
+        self.set_operating_mode('receive')
+
+        if self.packetFormat == 'fixed':
+            hwTimeout = 500
+            swTimeout = 0.5
+        else:
+            hwTimeout = 2000
+            swTimeout = 2
+
+        if intType == 'hw':    # hardware interrupt section
+            channel = IO.wait_for_edge(intPin,IO.RISING, timeout=hwTimeout)  # have got 200 working as well
+            if channel is not None:
+                ack = self.fifo_read()      
+                if check_ack(ack):                            
+                    success = True
+                    
+        else:                   # software interrupt section
+            timerStart = time.time()
+            while time.time()<=(timerStart+swTimeout) and success == False:
+                # check for received data via payload ready flag
+                while (self.single_access_read(0x28) & 0b00000100)==4:   
+                    ack = self.fifo_read()   
+                    if check_ack(ack):                        
+                        success = True
+                        break
+                time.sleep(0.01)
+
+        # put radio back into standby mode
+       
+        self.set_operating_mode('standby')
+
+        return success
+
+    #----------- user transmit/ receive and auxillary functions ----------------
+
+    def transmit_with_ack(self, txData,toAddress=0, intType = 'hw',retry=0, packetLength=64):
+        """transmit_with_ack, function to transmit data and retry if no acknowledgement
+        is receive in return for each packet sent"""
+
+        success = 0  # variable to keep track of the number of packets successfully sent
+        failed = 0   # variable to keep track of the number of packets that failed to send
+
+        addressOn=True
+
+        # look up fromAddress
+
+        for reg in self.registerList:     
+            if reg['name'] == 'RegNodeAdrs':            
+                fromAddress =reg['value']
+                break
+            
+        # send message, wait for acknowledgement and resend 'retry'
+        # number of times if required
+
+        for message in txData:
+            trys = 0
+            while trys <=retry:
+                self.transmit(message,addressOn, toAddress, fromAddress,ack=True,
+                               ackPattern=self.receiveAck, packetLength=packetLength)          
+                ackSuccess = self.receive_ack(toAddress, intType)
+                if ackSuccess == True:
+                    success+=1
+                    break
+                else:
+                    trys+=1
+           
+            else:
+                failed+=1
+                    
+        return success, failed 
+
+    def transmit(self, txData, addressOn=False, toAddress=0,fromAddress=None, ack=False, ackPattern=0, packetLength=64):
+        """transmit, user function to transmit data """
+
+        if fromAddress == None:
+            # look up fromAddress
+            for reg in self.registerList:     
+                if reg['name'] == 'RegNodeAdrs':            
+                    fromAddress =reg['value']
+                    break
+                
+        
+        self.fifo_write(txData, addressOn, toAddress, fromAddress, ack, ackPattern, packetLength)
+        self.transmit_packet()
+
+        return            
 
     def receive(self,timeout=999, background=False):
         """receive, user function to put the radio into receive
@@ -292,6 +447,131 @@ class Radio:
         else:
             receive_thread()
             return self.receiveData
+
+    def receive_hw_int(self):
+        """receive_hw_int, function to put the radio into receive mode,
+        waiting for a hardware interrupt to proceed.  Function will exit on
+        timer expiring  - self.receiveTimeout sets timer"""        
+        
+        timeStart=time.time()
+
+        # put radio into receive mode
+        self.set_operating_mode('receive')
+
+        # add interrupt event detect and check for event
+        # should interrupt on payload ready
+
+        intPin = self.intPin
+        
+        IO.add_event_detect(intPin,IO.RISING)
+        while (timeStart+self.receiveTimeout)>time.time() or self.receiveTimeout == -1:        
+            if IO.event_detected(intPin):
+                IO.remove_event_detect(intPin)
+                data = self.fifo_read()        
+                if len(data)>3:                             # check to ensure data is at least 3 bytes long
+                    self.receiveData.append(data)
+                    # insert call back function here when I get to it
+                    if self.packetFormat == 'fixed':
+                        if int(data[2]) == self.receiveAck:     # send ACK back if ACK request received            
+                            self.send_ack(data[1])
+                    else:  # packet format = 'variable'
+                        if int(data[3]) == self.receiveAck:     # send ACK back if ACK request received            
+                            self.send_ack(data[2])
+                IO.add_event_detect(intPin,IO.RISING)
+            else:
+                time.sleep(0.01)
+
+        # put radio back into standby mode and remove interrupt event detect
+            
+        self.set_operating_mode('standby')
+        IO.remove_event_detect(intPin)    
+
+        return
+
+    def receive_sw_int(self):
+        """receive_sw_int, function to put the radio into receive mode,
+        waiting for a softwaree interrupt to proceed.  Function will exit on
+        timer expiring  - self.receiveTimeout sets timer"""
+        
+        
+        timeStart=time.time()
+
+        # put radio into receive mode
+        self.set_operating_mode('receive')
+
+        # check for software interrupt event 
+        # should interrupt on payload ready
+
+        intPin = self.intPin
+        
+        while (timeStart+self.receiveTimeout)>time.time() or self.receiveTimeout == -1:
+            # check for received data via payload ready flag
+            while (self.single_access_read(0x28) & 0b00000100)==4:   
+                data = self.fifo_read()
+                if len(data)>3:                             # check to ensure data is at least 3 bytes long
+                    self.receiveData.append(data)
+                    # insert call back function here when I get to it
+                    if self.packetFormat == 'fixed':
+                        if int(data[2]) == self.receiveAck:     # send ACK back if ACK request received            
+                            self.send_ack(data[1])
+                    else:  # packet format = 'variable'
+                        if int(data[3]) == self.receiveAck:     # send ACK back if ACK request received            
+                            self.send_ack(data[2])             
+            time.sleep(0.01)     
+            
+        self.set_operating_mode('standby')        
+
+        return
+
+    def receive_timeout(self, time=0):
+        """receive_timeout, function to set the radio objects receiveTimeout variable"""
+
+        self.receiveTimeout = int(time)
+
+        return
+
+    def last_rssi(self):
+        """last_rssi, user function to get the last rssi value
+        mesaured by the radio receiver"""
+
+        lastRssi=-self.single_access_read(0x24)/2
+
+        return lastRssi   
+
+    def temperature(self):
+        """temperature, user function to get the temperature reading from the
+        radio's temperature sensor
+
+        registers 0x4E and 0x4F relate to the temperature sensor"""
+
+        # radio has to be in either Stand by or freq synth mode to take temperature
+
+        writeData=0b1001  # bit sequence required to start taking temp reading
+
+        self.single_access_write(reg=0x4E, regValue=writeData)
+
+        while self.single_access_read(reg=0x4E)==5:  # 5 = 0b101
+            pass
+
+        tempSensorValue=self.single_access_read(reg=0x4F)
+
+        # using tempSensorValue of 150 equaling 20 degrees
+        # and tempSensor range from -40 to 85 degrees
+
+        temperature=-40+((210+self.temperatureOffset)-tempSensorValue)    
+
+        return temperature
+
+    #------------ user functions to set the radios parameters and registers --------------
+
+    def set_acks(self, receiveAck=0, sendAck=0):
+        """set_acks, function to set the radio objects sendAck and receive ack variables"""
+
+        self.sendAck = sendAck          # ack pattern for when returning an acknowledgment
+        self.receiveAck = receiveAck    # ack pattern for when asking for an acknowledgment back
+
+        return
+    
 
     def set_address_filtering(self, mode='none'):
         """set_address_filtering, user function to set the addressing
@@ -643,6 +923,13 @@ class Radio:
 
         return
 
+    def set_interrupt_pin(self, intPin=0):
+        """set_interrupt_pin, function to set the radio objects intPin variable"""
+
+        self.intPin = intPin            # interrupt pin used
+
+        return
+
     def set_lna(self, autoOn='on', gainSelect='G1', inputZ=50):
         """set_lna, user function to set the parameters for the
         receiver's LNA (low noise amplifier)"""
@@ -743,6 +1030,8 @@ class Radio:
         """set_packet_format, user function to set the packet format
         including fixed vs variable vs unlimited length and payload length.
         This sets part of RegPacketConfig1 and all of RegPayloadLength"""
+
+        self.packetFormat = packetFormat
 
         #----- RegPacketConfig1 Section ---------
 
@@ -1018,40 +1307,7 @@ class Radio:
         self.set_register_by_name('RegRxTimeout1', timeoutBits)
         
         return
-
-    def temperature(self):
-        """temperature, user function to get the temperature reading from the
-        radio's temperature sensor
-
-        registers 0x4E and 0x4F relate to the temperature sensor"""
-
-        # radio has to be in either Stand by or freq synth mode to take temperature
-
-        writeData=0b1001  # bit sequence required to start taking temp reading
-
-        self.single_access_write(reg=0x4E, regValue=writeData)
-
-        while self.single_access_read(reg=0x4E)==5:  # 5 = 0b101
-            pass
-
-        tempSensorValue=self.single_access_read(reg=0x4F)
-
-        # using tempSensorValue of 150 equaling 20 degrees
-        # and tempSensor range from -40 to 85 degrees
-
-        temperature=-40+((210+self.temperatureOffset)-tempSensorValue)    
-
-        return temperature
-
-    def transmit(self, transmitData, addressOn=False, address=0,packetLength=64):
-        """transmit, user function to transmit data """
-
-        self.fifo_write(transmitData, addressOn, address, packetLength)
-        self.transmit_packet()
-
-        return
-
-
+    
 
 if __name__=='__main__':
 

@@ -1,6 +1,6 @@
 Function Descriptions
 
-Last Modified - March 18, 2017
+Last Modified - May 9, 2017
 
 Note: Work in Progress!!!
 
@@ -9,14 +9,41 @@ Most of the functions are for setting the various parameters for the radio,
 2 for transmit and receive, 1 to get the last RSSI value and 1 to get the 
 temperature via the radios temperature sensor.
 
-transmit(transmitData, addressOn=False, address=0,packetLength=64) 
-– function to transmit data from the radio.  
+transmit(transmitData, addressOn=False, toAddress=0,fromAddress=None,
+ack=False, ackPattern=0, packetLength=64) 
+– function to transmit data from the radio. Transmits a single packet of data 
 
-- transmitData: data to be transmitted, should be in string format
+- transmitData: data to be transmitted, should be in string format. Data larger 
+  than the packetLength will be truncated to fit the packetLength.
 - addressOn: if true an address byte will be added to the data to be sent
-- address:  the address byte to be sent if any address is being sent
+- toAddress:  the address byte to be sent if any address is being sent
+- fromAddress: if non-zero value, adds a byte of data of the radio senders address,
+  adds the byte one byte before ackPattern
+- ack: if true will add the ackPattern data immediately before the data to be sent 
+- ackPattern: optional acknowledge pattern to be added to packet sent
 - packetLength:  length of packet radio is expecting to send, if fixed length
 mode is used this should match the payload length parameter the radio is using
+
+transmit_with_ack(txData, toAddress=0,intType = 'hw',retry=0, packetLength=64)
+- function to transmit data with acknowledge back from the receiver after each
+  packet sent Can transmit multiple packets. 
+
+- txData: list of data to be sent, each list entry should either be in string or 
+  bytearray format
+- toAddress: the address byte to be sent if any address is being sent
+- intType: interrupt type to be used, either 'hw' or 'sw' (hardware or software). 
+  For hardware interrupts the radios interrupt pin has to be set and the pi GPIO 
+  used has to be set using the set_dio(dio0=1) and set_interrupt_pin([PiGPIO#]) 
+  functions respectively.
+- retry: - max number of times to resend a packet to try to get a successful 
+  acknowledge back from the receving radio
+- packetLength:  length of packet radio is expecting to send, if fixed length
+  mode is used this should match the payload length parameter the radio is using
+
+Function returns 2 values, one for # of successfully sent packages (i.e. an acknowledge
+received within the max retries allowed per packet) and one for failed sent packages 
+(i.e. no acknowledge received within the max retries allowed per packet)
+
 
 receive(timeout=999, background=False) – function to receive data sent to the radio
 
@@ -31,6 +58,36 @@ the background via a seperate thread so your program can proceed past the receiv
 
 All received data is put into the radio object's receiveData[] list.
 
+receive_hw_int() - function to receive data sent to the radio using a hardware interrupt
+to monitor for incoming packets.
+
+- for hardware interrupts the radios interrupt pin has to be set and the pi GPIO used
+  has to be set using the set_dio(dio0=1) and set_interrupt_pin([PiGPIO#]) functions 
+  respectively.
+
+- the length of time the receiver is on for is set by the receive_timeout() function.
+  A value of -1 will leave the radio in receive mode indefinately.  A value of 0 (zero)
+  will cancel the radio out of receive mode immediately. The receive_timeout() function
+  takes a value in seconds (s)
+
+All received data is put into the radio object's receiveData[] list.
+
+receive_sw_int() - function to receive data sent to the radio using a software interrupt
+to monitor for incoming packets.
+
+- the length of time the receiver is on for is set by the receive_timeout() function. 
+  A value of -1 will leave the radio in receive mode indefinately.  A value of 0 (zero)
+  will cancel the radio out of receive mode immediately. The receive_timeout() function 
+  takes a value in seconds (s)
+
+All received data is put into the radio object's receiveData[] list.
+
+receive_timeout(time=0) – this function sets the amount of time the radio is in receive mode
+- time: Value in seconds (s). A value of -1 will leave the radio in receive mode indefinately. 
+  A value of 0 (zero) will cancel the radio out of receive mode immediately.
+- sets self.receiveTimeout variable
+
+
 last_rssi() - this function returns the last received signal strength indicator
 stored in the radio's rssi register (RegRssiValue)  - this will be an integer 
 value in dBm
@@ -42,6 +99,14 @@ The radio object has a temperatureOffset variable that will need to be set.
 This can be done with the set_temperature_offset() function.
 
 Radio Set up Functions
+
+set_acks(receiveAck=0, sendAck=0) – function to set the receive and send ACK patterns used 
+by the radio.  Patterns should be a single byte long.
+- receiveAck: pattern send by the transmitter asking for an acknowledgement back and looked
+  for by the receiver to trigger sending an acknowledgement
+- sendAck: pattern sent by the receiver back to the transmitter in response to a receiveAck.
+  Pattern looked for by the transmitter indicating a succesful packet sent.
+- sets self.sendAck and self.receiveAck variables
 
 set_address_filtering(mode='none')– function to set the addressing filtering mode
 - mode: valid string values; none, node or both.  None means no address filtering is used, node requires 
@@ -121,6 +186,11 @@ set_frequency_deviation(fDev) - function to change the radio transmission freque
 - fDev – pass an integer value in Hz
 - sets registers RegFdevMsb & RegFdevLsb (0x05 & 0x06)
 
+set_interrupt_pin(intPin=0) – function to tell the radio module which of the Pi's GPIO pins is being
+used to receive the hardware (hw) interrupt signal from the radio
+- intPin: Pi GPIO pin number
+- sets self.intPin variable
+
 set_lna(autoOn='on', gainSelect='G1', inputZ=50) - function to set the parameters for the receiver's
 LNA (low noise amplifier)
 - autoOn – valid values are 'on' and 'off''. Set to 'on' the LNA gain is set automatically by the 
@@ -154,6 +224,7 @@ fixed vs variable vs unlimited length and payload length
 - packetFormat – valid values are 'variable', 'fixed' and 'unlimited'
 - payloadLength – pass an integer between 1 and 255
 - sets bit 7 of RegPacketConfig1 (0x37) and all of RegPayloadLength (0x38)
+- sets self.packetFormat variable
 
 set_power(ampSelect, powerLevel, powerRamp=40) - function to choose the power amplifier(s), transmit 
 power used and power ramp time
@@ -222,4 +293,23 @@ and to set it's level if enabled
 - timeoutOn – valid values are 'on' and 'off'
 - multiplier – pass an integer value between 1 and 255
 - sets RegRxTimeout1 (0x2A)
+
+
+Sent Packet Format
+
+Each packet sent, is sent in the following format. The length, toAddress, fromAddress and Ack bytes are all
+ optional and only included if selected via the various options.  For example the length byte is not included
+ if using fixed length format packets
+
+Length Byte, toAddress Byte, fromAddress byte, ACK byte, data/payload bytes
+
+
+Functions that rely on RPi.GPIO module
+
+The following functions rely on the RPi.GPIO module, these are for the hardware interrupts. If you want to
+use only the software interrupts or a difffernt GPIO manipulating modules these are the functions that
+will need to be modified or deleted.
+
+- receive_ack()
+- receive_hw_int()
 
