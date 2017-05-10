@@ -3,7 +3,7 @@
 RFM69HCW packet radio module
 
 created Jan 15, 2017 OM
-last modified - Jan 17, 2017 OM"""
+last modified - May 9, 2017 OM"""
 
 """
 Copyright 2017 Owain Martin
@@ -59,6 +59,8 @@ while True:
     mode=input('Pick receive mode 1 - Foreground, 2 - Background, Press 3 to Quit ')
 
     if mode == 3:
+        radio.receive_timeout(0)
+        time.sleep(0.5)
         break
 
     if mode != 1 and mode !=2:

@@ -3,7 +3,7 @@
 RFM69HCW packet radio module
 
 created Jan 15, 2017 OM
-last modified - Jan 17, 2017 OM"""
+last modified - May 9, 2017 OM"""
 
 """
 Copyright 2017 Owain Martin
@@ -52,7 +52,7 @@ while True:
     userInput=input('Press 1 to send message, 2 to quit ')
 
     if userInput == 1:
-        radio.transmit(testMessage,addressOn=True, address=5,packetLength=64)
+        radio.transmit(testMessage,addressOn=True, toAddress=5,packetLength=64)
     elif userInput == 2:
         break
     else:
