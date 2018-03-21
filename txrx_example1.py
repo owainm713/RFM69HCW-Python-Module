@@ -65,12 +65,12 @@ radio.set_encryption('on', keyList)                 # set encryption
 
 if site == 'A':
     radio.set_node_address(9)
-    radio.set_interrupt_pin(13)
+    radio.set_interrupt_pin(intPin)
     toAddr = 5    
     
 else:
     toAddr = 9
-    radio.set_interrupt_pin(5)
+    radio.set_interrupt_pin(intPin)
 
 radio.set_temperature_offset(-3)
 print(radio.temperature())

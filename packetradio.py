@@ -2,7 +2,7 @@
 """packetradio, module for use with the RFM69HCW packet radio
 
 created Dec 19, 2016 OM
-work in progress - May 8, 2017"""
+work in progress - Mar 21, 2018"""
 
 """
 Copyright 2017 Owain Martin
@@ -33,6 +33,7 @@ class Radio:
 
         self.spi=spidev.SpiDev()
         self.spi.open(spi_port,spi_cs)
+        self.spi.max_speed_hz = 4000000
 
         # set register list dictionary 
 
@@ -299,9 +300,13 @@ class Radio:
             address and check the ack is the correct value"""
 
             if self.packetFormat == 'fixed':
+                if len(data)<3:
+                    return False
                 sendAckByte = data[2]
                 toAddressByte = data[1]
             else:  # packetFormat = 'variable'
+                if len(data)<4:
+                    return False
                 sendAckByte = data[3]
                 toAddressByte = data[2]
 

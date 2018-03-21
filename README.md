@@ -10,7 +10,7 @@ to use the SPI interface. SPI also needs to be enabled on each Raspberry Pi.
 The example code also uses RPi.GPIO to set the radio enable and reset 
 pins as well as for hardware (hw) interrupt but any python module that can 
 manipulate the Raspberry Pi's GPIO likely could be used instead. The guide lists
-the functions that would require changes.
+the functions that would require changes.  I recommend starting with the txrx_example1.py
 
 My set up consists of a RaspberryPi3 and PiZero both running Raspbian Jessie.
 I'm currently using the 433MHz RFM radios.  The 915MHz version should
@@ -63,3 +63,7 @@ May 8, 2017
   2 radios (not recommended for large files, 300K files take approx
   25 minutes to transmit)
 
+March 21, 2018
+- fixed SPI interface issue which surfaced after recent Pi s/w upgrades by explicitly 
+  setting speed of SPI connection
+- fixed bug in acknowledgment function that caused the occassional crash
