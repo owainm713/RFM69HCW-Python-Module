@@ -1,12 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """txrx_example2, receiver example program to use with packetradio.py
 RFM69HCW packet radio module
 
 created May 4, 2017 OM
-last modified - May 9, 2017 OM"""
+modified - May 9, 2017 OM
+modified - Jan 18, 2020 OM"""
 
 """
-Copyright 2017 Owain Martin
+Copyright 2017, 2018, 2019, 2020 Owain Martin
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -57,6 +58,7 @@ IO.setup(intPin, IO.IN)
 IO.output(enablePin, True)    
 radio=PR.Radio(0,1)                                 # radio=PR.Radio(spi_port=0,spi_cs=1)
 radio.set_dio(dio0=1)                               # set up radio h/w interrupt out on  DIO 0
+radio.set_frequency(915000000)                      # set up radio frequency
 radio.set_acks(receiveAck=12,sendAck=13)            # set radio acknowledgement bytes
 radio.set_sync_word(syncValueList=[0xE2,0x4A,0x26]) # set radio sync word 
 radio.set_power('Pa1', 0)                           # set power
@@ -65,12 +67,12 @@ radio.set_encryption('on', keyList)                 # set encryption
 
 if site == 'A':
     radio.set_node_address(9)
-    radio.set_interrupt_pin(intPin)
+    radio.set_interrupt_pin(13)
     toAddr = 5    
     
 else:
     toAddr = 9
-    radio.set_interrupt_pin(intPin)
+    radio.set_interrupt_pin(5)
 
 radio.set_temperature_offset(-3)
 print(radio.temperature())
@@ -85,17 +87,17 @@ def print_radio_data():
             if radio.packetFormat == 'fixed':
                 if int(data[2]) == radio.receiveAck:
                     print(str(data[0])+' '+str(data[1])+' '+str(data[2])+' '+
-                          str(data[3:]))
+                          str(data[3:].decode()))
                 else:
-                    print(str(data[0])+' '+str(data[1])+' '+str(data[2:]))
+                    print(str(data[0])+' '+str(data[1])+' '+str(data[2:].decode()))
 
             else:   # packetFormat = 'variable'
                 if int(data[3]) == radio.receiveAck:
                     print(str(data[0])+' '+str(data[1])+' '+str(data[2])+' '+
-                          str(data[3])+' '+str(data[4:]))
+                          str(data[3])+' '+str(data[4:].decode()))
                 else:
                     print(str(data[0])+' '+str(data[1])+' '+str(data[2])+' '+
-                          str(data[3:]))      
+                          str(data[3:].decode()))      
            
         time.sleep(0.01)
 
@@ -109,7 +111,7 @@ txData=['T5','Hello there', 'S1232325', 'ACK Stinky Sockes', 'ACK I love coke']
 
 while True:
     print("Press 1 - Rx SW Int, 2 - Rx HW Int 3 - Interrupt Rx, 4 - Tx HW Int Ack, 5 - Tx SW Int Ack ")
-    mode=input("6 - Tx No Ack, 7 - change packet format, variable/fixed, Press 8 to Quit ")
+    mode=int(input("6 - Tx No Ack, 7 - change packet format, variable/fixed, Press 8 to Quit "))
 
     if mode == 8:
         checkForInput = False

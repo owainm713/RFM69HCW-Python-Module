@@ -1,8 +1,8 @@
 # RFM69HCW-Python-Module
-Python 2.x Module for use with the adafruit RFM69HCW breakout board
+Python 2.x, 3.x Module for use with the adafruit RFM69HCW breakout board
 and the Raspberry Pi
 
-To use this module, run your program as the root user,  i.e. sudo...
+To use this module, you no longer need to run it as root, i.e. sudo...
 
 The module uses and relies on py-spidev and python-dev to be installed 
 to use the SPI interface. SPI also needs to be enabled on each Raspberry Pi.
@@ -12,9 +12,10 @@ pins as well as for hardware (hw) interrupt but any python module that can
 manipulate the Raspberry Pi's GPIO likely could be used instead. The guide lists
 the functions that would require changes.  I recommend starting with the txrx_example1.py
 
-My set up consists of a RaspberryPi3 and PiZero both running Raspbian Jessie.
-I'm currently using the 433MHz RFM radios.  The 915MHz version should
-run the same and once I get a pair I will verify.
+My set up consists of a RaspberryPi3 and PiZero, one running Raspbian Jessie and one
+running Raspbian Stretch
+
+I'm have now used both the 433MHz and 915MHz RFM radios.
 
 Connections to the RFM69HCW breakout board from the Pi are as follows:
 
@@ -67,3 +68,8 @@ March 21, 2018
 - fixed SPI interface issue which surfaced after recent Pi s/w upgrades by explicitly 
   setting speed of SPI connection
 - fixed bug in acknowledgment function that caused the occassional crash
+
+January 25, 2020
+- tested out the 915MHz radio version successfully
+- modified code to work with Python 3.x
+- removed requirement to run program as root user, i.e. sudo...

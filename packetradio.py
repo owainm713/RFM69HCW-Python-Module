@@ -2,10 +2,11 @@
 """packetradio, module for use with the RFM69HCW packet radio
 
 created Dec 19, 2016 OM
-work in progress - Mar 21, 2018"""
+work in progress - Mar 21, 2018
+work in progress - Jan 18, 2020"""
 
 """
-Copyright 2017 Owain Martin
+Copyright 2017, 2018, 2019, 2020 Owain Martin
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -181,7 +182,8 @@ class Radio:
         fifoData  contains a string that will be converted to a bytearray for transmitting
         packetLength is the packet length to be transmitted"""
 
-        fifoData=bytearray(fifoData)        
+        if type(fifoData) == type('a string'):
+            fifoData=bytearray(fifoData, encoding = "utf-8")        
 
         if ack == True:
             try:
@@ -189,7 +191,8 @@ class Radio:
                 fifoData.insert(0,ackPattern)           # acknowledge Pattern
             except:
                 for i in range(len(ackPattern)-1,-1,-1):  
-                    fifoData.insert(0,ackPattern[i])    # acknowledge Pattern
+                    #fifoData.insert(0,ackPattern[i])    # does not work with Python3 - acknowledge Pattern
+                    fifoData = ackPattern.encode('UTF-8') + fifoData # acknowledge Pattern
 
         if fromAddress != 0:
             fifoData.insert(0,fromAddress)              # from address byte
@@ -209,7 +212,8 @@ class Radio:
         if self.packetFormat == 'fixed':
             if len(fifoData)<packetLength:
                 for i in range(len(fifoData),packetLength):
-                    fifoData.append(' ')
+                    #fifoData.append(' ') # does not work with Python3
+                    fifoData = fifoData + ' '.encode('UTF-8')
 
         # check fifoData length, if greater than packetLength, remove excess data
         # until fifoData length is equal to packetLength
@@ -375,6 +379,7 @@ class Radio:
 
         for message in txData:
             trys = 0
+            messageLength = len(message)
             while trys <=retry:
                 self.transmit(message,addressOn, toAddress, fromAddress,ack=True,
                                ackPattern=self.receiveAck, packetLength=packetLength)          
@@ -384,13 +389,15 @@ class Radio:
                     break
                 else:
                     trys+=1
+                    if len(message) > messageLength:
+                        message = message[(len(message)-messageLength):] # not sure why message changes but it comes back with from/to addresses added
            
             else:
                 failed+=1
                     
         return success, failed 
 
-    def transmit(self, txData, addressOn=False, toAddress=0,fromAddress=None, ack=False, ackPattern=0, packetLength=64):
+    def transmit(self, txData1, addressOn=False, toAddress=0,fromAddress=None, ack=False, ackPattern=0, packetLength=64):
         """transmit, user function to transmit data """
 
         if fromAddress == None:
@@ -401,7 +408,7 @@ class Radio:
                     break
                 
         
-        self.fifo_write(txData, addressOn, toAddress, fromAddress, ack, ackPattern, packetLength)
+        self.fifo_write(txData1, addressOn, toAddress, fromAddress, ack, ackPattern, packetLength)
         self.transmit_packet()
 
         return            
@@ -484,6 +491,7 @@ class Radio:
                             self.send_ack(data[2])
                 IO.add_event_detect(intPin,IO.RISING)
             else:
+                #time.sleep(0.001)
                 time.sleep(0.01)
 
         # put radio back into standby mode and remove interrupt event detect
@@ -522,7 +530,8 @@ class Radio:
                     else:  # packet format = 'variable'
                         if int(data[3]) == self.receiveAck:     # send ACK back if ACK request received            
                             self.send_ack(data[2])             
-            time.sleep(0.01)     
+            #time.sleep(0.001)
+            time.sleep(0.01)
             
         self.set_operating_mode('standby')        
 

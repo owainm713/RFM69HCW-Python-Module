@@ -3,10 +3,11 @@
 RFM69HCW packet radio module
 
 created May 7, 2017 OM
-last modified - May 9, 2017 OM"""
+last modified - May 9, 2017 OM
+last modified - Jan 19, 2020 OM"""
 
 """
-Copyright 2017 Owain Martin
+Copyright 2017, 2018, 2019, 2020 Owain Martin
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -40,9 +41,12 @@ else:
     resetPin = 6   #6, 19
     intPin = 5     #5, 13
 
-testSendFile = '/home/pi/Documents/yourfilenamehere'     # name/location of file to send - change this to a file on your Pi
-testReceiveFile = '/home/pi/Documents/yourfilenamehere'  # name/location of received file - change this to a file on your Pi
+#testSendFile = '/home/pi/Documents/yourfilenamehere'     # name/location of file to send - change this to a file on your Pi
+#testReceiveFile = '/home/pi/Documents/yourfilenamehere'  # name/location of received file - change this to a file on your Pi
 
+testSendFile = '/home/pi/Documents/PythonProjects/PacketRadio/test.txt'
+testReceiveFile = '/home/pi/Documents/PythonProjects/PacketRadio/test2.txt'
+#testSendFile = '/home/pi/Documents/PythonProjects/openCVpractice/IMGP3711vSm.jpg'
 
 # set up GPIO settings
 IO.setwarnings(False)
@@ -59,6 +63,7 @@ IO.setup(intPin, IO.IN)
 IO.output(enablePin, True)    
 radio=PR.Radio(0,1)                                 # radio=PR.Radio(spi_port=0,spi_cs=1)
 radio.set_dio(dio0=1)                               # set up radio h/w interrupt out on  DIO 0
+radio.set_frequency(915000000)                      # set up radio frequency
 radio.set_acks(receiveAck=12,sendAck=13)            # set radio acknowledgement bytes
 radio.set_sync_word(syncValueList=[0xE2,0x4A,0x26]) # set radio sync word 
 radio.set_power('Pa1', 0)                           # set power
@@ -90,12 +95,14 @@ def get_radio_data2():
 
     while checkForInput==True: 
         while len(radio.receiveData) > 0:
-                data = radio.receiveData.pop(0)
-                dataList.append(data[3:])
+                data = radio.receiveData.pop(0)                
+                dataList.append(data[3:])                
                 counter+=1
+                #time.sleep(0.01)
         time.sleep(0.01)
 
-    print(counter, len(dataList))
+
+    #print(counter, len(dataList))
 
     i = 0
     while i <=(len(dataList)-1):
@@ -104,21 +111,19 @@ def get_radio_data2():
         else:
             i+=1
 
-    print(len(dataList))
+    #print(len(dataList))
         
 
     for line in dataList:
+        #print(line, len(line))
         for char in line:
+            #print(char)
             toFile.append(char)
 
     print('Data in toFile')
 
     return
                 
- 
-    
-
-
 
 checkForInput = True
 fileLoop = threading.Thread(name='get_radio_data2', target=get_radio_data2)
@@ -126,7 +131,7 @@ fileLoop.start()
 
 while True:
     
-    mode=input("1 - Send file, 2 - Receive file 3 - Stop Receive 4 - convert file 5 - Quit ")
+    mode=int(input("1 - Send file, 2 - Receive file 3 - Stop Receive 4 - convert file 5 - Quit "))
 
     if mode == 5:
         checkForInput = False
@@ -137,18 +142,18 @@ while True:
         
         with open(testSendFile, 'rb') as textFile:
                 f = textFile.read()
-                data = bytearray(f)
+                data = bytearray(f)        
 
-        txData=[]
+        transmitData=[]
 
         for i in range(0, len(data)-1, 61):
             if (i+61)<=len(data):
-                txData.append(data[i:i+61])
+                transmitData.append(data[i:i+61])
             else:
-                txData.append(data[i:])
+                transmitData.append(data[i:])
 
-        print(len(txData))
-        success, failed = radio.transmit_with_ack(txData,toAddr,intType='hw', retry=4)
+        #print(len(transmitData))
+        success, failed = radio.transmit_with_ack(transmitData,toAddr,intType='hw', retry=4)
         print(success, failed)
 
     elif mode == 2:
